@@ -20,12 +20,12 @@ DWORD triggerNamedPipeConnectionThread(LPVOID pipeName);
 
 int main(int argc, char* argv[]) {
 
-    if (argc < 2) {
-        printf("Usage: ./mimic <pipeName> <processName>\nExample: ./mimic.exe \\\\.\\pipe\\test C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
+    if (argc < 1) {
+        printf("Usage: ./mimic <process>\nExample: ./mimic.exe \\\\.\\pipe\\test C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
         exit(1);
     }
 
-    LPCWSTR processName = (LPCWSTR)charToLPWSTR(argv[2]);
+    LPCWSTR processName = (LPCWSTR)charToLPWSTR(argv[1]);
 
     HANDLE hPipe = INVALID_HANDLE_VALUE;
     HANDLE token = INVALID_HANDLE_VALUE;
