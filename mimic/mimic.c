@@ -21,7 +21,7 @@ DWORD triggerNamedPipeConnectionThread(LPVOID pipeName);
 int main(int argc, char* argv[]) {
 
     if (argc < 1) {
-        printf("Usage: ./mimic <process>\nExample: ./mimic.exe \\\\.\\pipe\\test C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
+        printf("Usage: ./mimic <process>\nExample: ./mimic.exe C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
         exit(1);
     }
 
