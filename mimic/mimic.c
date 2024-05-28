@@ -21,7 +21,7 @@ DWORD triggerNamedPipeConnectionThread(LPVOID pipeName);
 int main(int argc, char* argv[]) {
 
     if (argc < 2) {
-        printf("Usage: ./mimic <process> [arguments] \nExample: ./mimic.exe \\\\.\\pipe\\test C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
+        printf("Usage: ./%s <process> [arguments] \nExample: ./%s C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", argv[0], argv[0]);
         exit(1);
     }
 
@@ -324,7 +324,6 @@ int checkPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege) {
                     }
                 }
                 free(buffer);
-                return -1;   //If not found return -1
             }
             else {
                 printLastError("[x] Failed to get token information.\n");
@@ -334,6 +333,7 @@ int checkPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege) {
             printLastError("[x] Failed to get token information size.\n");
         }
     }
+    return -1;   //If not found return -1
 }
 
 void enablePrivilege(HANDLE token, LPCTSTR lpszPrivilege) {
@@ -440,6 +440,7 @@ DWORD triggerNamedPipeConnectionThread(LPVOID pipeName) {
     free(computerName);
     free(captureServer);
     free(targetServer);
+    return 0;
 }
 
 handle_t __RPC_USER STRING_HANDLE_bind(STRING_HANDLE lpStr)
